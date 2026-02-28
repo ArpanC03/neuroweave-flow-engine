@@ -1,1 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroWeave Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #38bdf8; margin-bottom: 2rem; }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+        .metric-label { color: #cbd5e1; margin-top: 0.5rem; }
+        .chart-container {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .interventions {
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+        .intervention-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+        .intervention-item:last-child { border-bottom: none; }
+        .effective { color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 NeuroWeave Flow Dashboard</h1>
+        
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="peak-flow">--</div>
+                <div class="metric-label">Peak Flow</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avg-flow">--</div>
+                <div class="metric-label">Average Flow</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="interventions">--</div>
+                <div class="metric-label">Interventions</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="time-saved">--</div>
+                <div class="metric-label">Time Saved (min)</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="flowChart"></canvas>
+        </div>
+
+        <div class="interventions">
+            <h2 style="color: #38bdf8; margin-bottom: 1rem;">Interventions Deployed</h2>
+            <div id="intervention-list"></div>
+        </div>
+    </div>
+
+    <script>
+        fetch('/api/session-data')
+            .then(res => res.json())
+            .then(data => {
+                // Update metrics
+                document.getElementById('peak-flow').textContent = data.metrics.peak_flow;
+                document.getElementById('avg-flow').textContent = data.metrics.avg_flow;
+                document.getElementById('interventions').textContent = data.metrics.total_interventions;
+                document.getElementById('time-saved').textContent = data.metrics.time_saved_min;
+
+                // Create flow chart
+                const ctx = document.getElementById('flowChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.timeline.map(t => t.timestamp),
+                        datasets: [{
+                            label: 'Flow Score',
+                            data: data.timeline.map(t => t.score),
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { labels: { color: '#f1f5f9' } }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { color: '#cbd5e1' },
+                                grid: { color: '#334155' }
+                            },
+                            x: {
+                                ticks: { color: '#cbd5e1' },
+                                grid: { color: '#334155' }
+                            }
+                        }
+                    }
+                });
+
+                // Populate interventions
+                const list = document.getElementById('intervention-list');
+                data.interventions.forEach(int => {
+                    list.innerHTML += `
+                        <div class="intervention-item">
+                            <span>${int.time} - ${int.type}</span>
+                            <span class="effective">✓ Effective</span>
+                        </div>
+                    `;
+                });
+            });
+    </script>
+</body>
+</html>
 
